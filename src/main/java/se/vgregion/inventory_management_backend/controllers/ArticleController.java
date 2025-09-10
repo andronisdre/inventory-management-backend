@@ -28,6 +28,12 @@ public class ArticleController {
         return articleService.getAllArticles();
     }
 
+    //GET articles with low amount
+    @GetMapping("/lowAmount")
+    public List<Article> getAllArticlesWithLowAmount() {
+        return articleService.getAllArticlesWithLowAmount();
+    }
+
     //GET article by id
     @RequestMapping(value = "/{id}", method = RequestMethod.GET)
     public Article getAuctionModelsById(@PathVariable Long id) {
@@ -38,5 +44,17 @@ public class ArticleController {
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
     public String deleteAuctionModels(@PathVariable Long id) {
         return articleService.deleteArticle(id);
+    }
+
+    //UPDATE article by id
+    @PutMapping(value = "/{id}")
+    public Article updateArticle(@PathVariable Long id, @RequestBody Article updatedArticle) {
+        return articleService.updateArticle(id, updatedArticle);
+    }
+
+    //PATCH article amount by id
+    @PatchMapping("/{id}/{newAmount}")
+    public Article patchArticleAmount(@PathVariable Long id, @PathVariable int newAmount) {
+        return articleService.patchArticleAmount(id, newAmount);
     }
 }

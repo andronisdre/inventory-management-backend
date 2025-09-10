@@ -2,19 +2,25 @@ package se.vgregion.inventory_management_backend.models;
 
 import jakarta.persistence.*;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import se.vgregion.inventory_management_backend.enums.EUnit;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 public class Article {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @CreatedDate
-    private Date created_at;
+    private LocalDateTime createdAt;
+    private Date updatedAt;
     private int amount;
+    private int minimumAmount;
     private String name;
-    private String unit;
+    private EUnit unit;
 
     public Article() {
     }
@@ -27,12 +33,20 @@ public class Article {
         this.id = id;
     }
 
-    public Date getCreated_at() {
-        return created_at;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    public void setCreated_at(Date created_at) {
-        this.created_at = created_at;
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Date getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Date updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     public int getAmount() {
@@ -43,6 +57,14 @@ public class Article {
         this.amount = amount;
     }
 
+    public int getMinimumAmount() {
+        return minimumAmount;
+    }
+
+    public void setMinimumAmount(int minimumAmount) {
+        this.minimumAmount = minimumAmount;
+    }
+
     public String getName() {
         return name;
     }
@@ -51,11 +73,11 @@ public class Article {
         this.name = name;
     }
 
-    public String getUnit() {
+    public EUnit getUnit() {
         return unit;
     }
 
-    public void setUnit(String unit) {
+    public void setUnit(EUnit unit) {
         this.unit = unit;
     }
 }
