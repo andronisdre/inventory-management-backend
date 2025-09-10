@@ -1,8 +1,13 @@
 package se.vgregion.inventory_management_backend.controllers;
 
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import se.vgregion.inventory_management_backend.models.Article;
+import se.vgregion.inventory_management_backend.dto.ArticleResponseDTO;
+import se.vgregion.inventory_management_backend.dto.CreateArticleDTO;
+import se.vgregion.inventory_management_backend.dto.PatchAmountDTO;
+import se.vgregion.inventory_management_backend.dto.UpdateArticleDTO;
 import se.vgregion.inventory_management_backend.services.ArticleService;
 
 import java.util.List;
@@ -18,43 +23,44 @@ public class ArticleController {
 
     //POST an article
     @PostMapping
-    public Article createArticle(@Valid @RequestBody Article article) {
-        return articleService.addArticle(article);
+    public ResponseEntity<ArticleResponseDTO> createArticle(@Valid @RequestBody CreateArticleDTO createArticleDTO) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(articleService.addArticle(createArticleDTO));
     }
 
     //GET ALL articles
-    @GetMapping("/all")
-    public List<Article> getAllArticles() {
-        return articleService.getAllArticles();
+    @GetMapping
+    public ResponseEntity<List<ArticleResponseDTO>> getAllArticles() {
+        return ResponseEntity.ok(articleService.getAllArticles());
     }
 
     //GET articles with low amount
     @GetMapping("/lowAmount")
-    public List<Article> getAllArticlesWithLowAmount() {
-        return articleService.getAllArticlesWithLowAmount();
+    public ResponseEntity<List<ArticleResponseDTO>> getAllArticlesWithLowAmount() {
+        return ResponseEntity.ok(articleService.getAllArticlesWithLowAmount());
     }
 
     //GET article by id
     @RequestMapping(value = "/{id}", method = RequestMethod.GET)
-    public Article getAuctionModelsById(@PathVariable Long id) {
-        return articleService.getArticleById(id);
+    public ResponseEntity<ArticleResponseDTO> getArticleById(@PathVariable Long id) {
+        return ResponseEntity.ok(articleService.getArticleById(id));
     }
 
     //Remove an article
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
-    public String deleteAuctionModels(@PathVariable Long id) {
-        return articleService.deleteArticle(id);
+    public ResponseEntity<Void> deleteArticle(@PathVariable Long id) {
+        articleService.deleteArticle(id);
+        return ResponseEntity.noContent().build();
     }
 
     //UPDATE article by id
     @PutMapping(value = "/{id}")
-    public Article updateArticle(@PathVariable Long id, @RequestBody Article updatedArticle) {
-        return articleService.updateArticle(id, updatedArticle);
+    public ResponseEntity<ArticleResponseDTO> updateArticle(@PathVariable Long id, @Valid @RequestBody UpdateArticleDTO updateArticleDTO) {
+        return ResponseEntity.ok(articleService.updateArticle(id, updateArticleDTO));
     }
 
     //PATCH article amount by id
-    @PatchMapping("/{id}/{newAmount}")
-    public Article patchArticleAmount(@PathVariable Long id, @PathVariable int newAmount) {
-        return articleService.patchArticleAmount(id, newAmount);
+    @PatchMapping("/{id}/changeAmount")
+    public ResponseEntity<ArticleResponseDTO> patchArticleAmount(@PathVariable Long id, @Valid @RequestBody PatchAmountDTO patchAmountDTO) {
+        return ResponseEntity.ok(articleService.patchArticleAmount(id, patchAmountDTO));
     }
 }

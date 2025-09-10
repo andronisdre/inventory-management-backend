@@ -2,10 +2,13 @@ package se.vgregion.inventory_management_backend.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import se.vgregion.inventory_management_backend.dto.ArticleResponseDTO;
+import se.vgregion.inventory_management_backend.dto.CreateArticleDTO;
+import se.vgregion.inventory_management_backend.dto.PatchAmountDTO;
+import se.vgregion.inventory_management_backend.dto.UpdateArticleDTO;
 import se.vgregion.inventory_management_backend.models.Article;
 import se.vgregion.inventory_management_backend.repository.ArticleRepository;
 
-import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,67 +23,80 @@ public class ArticleService {
     }
 
     // POST Article
-    public Article addArticle(Article article) {
-        return articleRepository.save(article);
+    public ArticleResponseDTO addArticle(CreateArticleDTO createArticleDTO) {
+
+        //creates an article and assigns the values of the DTO to the Article type.
+        Article article = new Article();
+        article.setName(createArticleDTO.getName());
+        article.setAmount(createArticleDTO.getAmount());
+        article.setMinimumAmount(createArticleDTO.getMinimumAmount());
+        article.setUnit(createArticleDTO.getUnit());
+
+        Article savedArticle = articleRepository.save(article);
+        return new ArticleResponseDTO(savedArticle);
     }
 
     // GET ALL Articles
-    public List<Article> getAllArticles() {
-        return articleRepository.findAll();
+    public List<ArticleResponseDTO> getAllArticles() {
+        return articleRepository.findAll().stream().map(ArticleResponseDTO::new).collect(Collectors.toList());
     }
 
     // GET Article by id
-    public Article getArticleById(Long id) {
-        return articleRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid Article id: " + id));
+    public ArticleResponseDTO getArticleById(Long id) {
+        return new ArticleResponseDTO(articleRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid Article id: " + id)));
     }
 
     // DELETE Article
-    public String deleteArticle(Long id) {
-        Article article = articleRepository.findById(id).orElse(null);
-        if (article != null) {
-            articleRepository.deleteById(id);
-            return "Article deleted";
-        } else {
-            return "Article id doesn't exist";
-        }
+    public void deleteArticle(Long id) {
+        Article article = articleRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid Article id: " + id));
+        articleRepository.deleteById(id);
     }
 
     // PUT update article
-    public Article updateArticle(Long id, Article updatedArticle) {
-        Article exisingArticle = articleRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid Article id: " + id));
+    public ArticleResponseDTO updateArticle(Long id, UpdateArticleDTO updateArticleDTO) {
+        Article existingArticle = articleRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid Article id: " + id));
 
-        if (updatedArticle.getUnit() != null) {
-            exisingArticle.setUnit(updatedArticle.getUnit());
+        if (updateArticleDTO.getUnit() != null) {
+            existingArticle.setUnit(updateArticleDTO.getUnit());
         }
-        if (updatedArticle.getName() != null) {
-            exisingArticle.setName(updatedArticle.getName());
+        if (updateArticleDTO.getName() != null) {
+            existingArticle.setName(updateArticleDTO.getName());
         }
-        if (updatedArticle.getMinimumAmount() != 0) {
-            exisingArticle.setMinimumAmount(updatedArticle.getMinimumAmount());
+        //since amount and minimumAmount are Integer types in the UpdateArticleDTOs, they are nullable, unlike primitive int types which cant be nullable.
+        //This is useful since you can now ensure that a user has to type an amount and minimum amount and that it wont automatically be  the value 0.
+        //You can still assign the value 0.
+        //The Article model itself (the one that is actually saved) still uses int
+        //which means that memory is still optimized, since int type uses only 4 bytes compared to Integer which uses 16.
+        if (updateArticleDTO.getAmount() != null) {
+            existingArticle.setAmount(updateArticleDTO.getAmount());
+        }
+        if (updateArticleDTO.getMinimumAmount() != null) {
+            existingArticle.setMinimumAmount(updateArticleDTO.getMinimumAmount());
         }
 
-        exisingArticle.setCreatedAt(exisingArticle.getCreatedAt());
-        exisingArticle.setUpdatedAt(new Date());
-
-        return articleRepository.save(exisingArticle);
+        articleRepository.save(existingArticle);
+        return new ArticleResponseDTO(existingArticle);
     }
 
     // PATCH Article amount
-    public Article patchArticleAmount(Long id, int newAmount) {
+    public ArticleResponseDTO patchArticleAmount(Long id, PatchAmountDTO patchAmountDTO) {
         Article exisingArticle = articleRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid Article id: " + id));
 
-        if (newAmount >= 0) {
-            exisingArticle.setAmount(newAmount);
+        if (patchAmountDTO.getAmount() != null) {
+            exisingArticle.setAmount(patchAmountDTO.getAmount());
         }
 
-        exisingArticle.setUpdatedAt(new Date());
-
-        return articleRepository.save(exisingArticle);
+        articleRepository.save(exisingArticle);
+        return new ArticleResponseDTO(exisingArticle);
     }
 
     // GET Articles with low amount
-    public List<Article> getAllArticlesWithLowAmount() {
-        return articleRepository.findAll().stream().filter(article -> article.getMinimumAmount()>=(article.getAmount()))
+    public List<ArticleResponseDTO> getAllArticlesWithLowAmount() {
+        //find all articles that match the filter where amount is smaller or equal to minimumAmount, then maps them into ArticleResponseDTOs for the correct response format.
+        return articleRepository.findAll().stream()
+                .filter(article -> article.getAmount() <= article.getMinimumAmount())
+                .map(ArticleResponseDTO::new)
                 .collect(Collectors.toList());
     }
 }
