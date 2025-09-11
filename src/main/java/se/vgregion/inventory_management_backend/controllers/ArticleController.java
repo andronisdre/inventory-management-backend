@@ -13,6 +13,7 @@ import se.vgregion.inventory_management_backend.services.ArticleService;
 import java.util.List;
 
 @RestController
+@CrossOrigin(origins = "http://localhost:5173")
 @RequestMapping("/api/articles")
 public class ArticleController {
     private final ArticleService articleService;
