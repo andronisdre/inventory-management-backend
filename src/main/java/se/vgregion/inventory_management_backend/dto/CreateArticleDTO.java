@@ -9,7 +9,7 @@ import se.vgregion.inventory_management_backend.enums.EUnit;
 public class CreateArticleDTO {
     //Validation annotations such as NotNull Size and NotNull to ensure that when using @Valid in controller functions, A user has to follow these rules for input.
     @NotBlank(message = "Name is required!")
-    @Size(max = 100, message = "Name cannot be more than 100 characters!")
+    @Size(max = 50, message = "Name cannot be more than 100 characters!")
     private String name;
 
     @NotNull(message = "Amount is required!")

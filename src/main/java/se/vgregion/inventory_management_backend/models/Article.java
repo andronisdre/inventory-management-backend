@@ -23,6 +23,8 @@ public class Article {
 
     private int amount;
     private int minimumAmount;
+
+    @Column(unique=true)
     private String name;
     private EUnit unit;
 

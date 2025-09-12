@@ -29,12 +29,16 @@ public class ArticleController {
     }
 
     //GET ALL articles
+
+    //add pagination
     @GetMapping
     public ResponseEntity<List<ArticleResponseDTO>> getAllArticles() {
         return ResponseEntity.ok(articleService.getAllArticles());
     }
 
     //GET articles with low amount
+
+    //add pagination
     @GetMapping("/lowAmount")
     public ResponseEntity<List<ArticleResponseDTO>> getAllArticlesWithLowAmount() {
         return ResponseEntity.ok(articleService.getAllArticlesWithLowAmount());
@@ -64,4 +68,8 @@ public class ArticleController {
     public ResponseEntity<ArticleResponseDTO> patchArticleAmount(@PathVariable Long id, @Valid @RequestBody PatchAmountDTO patchAmountDTO) {
         return ResponseEntity.ok(articleService.patchArticleAmount(id, patchAmountDTO));
     }
+
+    //add search by name function
+
+    //add order by name, order by status functions
 }

@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Size;
 import se.vgregion.inventory_management_backend.enums.EUnit;
 
 public class UpdateArticleDTO {
-    @Size(max = 100, message = "Name cannot be more than 100 characters!")
+    @Size(max = 50, message = "Name cannot be more than 100 characters!")
     private String name;
 
     @Min(value = 0, message = "Amount cannot be negative")
