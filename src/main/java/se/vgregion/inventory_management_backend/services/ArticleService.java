@@ -1,6 +1,9 @@
 package se.vgregion.inventory_management_backend.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import se.vgregion.inventory_management_backend.dto.ArticleResponseDTO;
 import se.vgregion.inventory_management_backend.dto.CreateArticleDTO;
@@ -36,9 +39,18 @@ public class ArticleService {
         return new ArticleResponseDTO(savedArticle);
     }
 
-    // GET ALL Articles
-    public List<ArticleResponseDTO> getAllArticles() {
-        return articleRepository.findAll().stream().map(ArticleResponseDTO::new).collect(Collectors.toList());
+    // GET ALL Articles, with pagination always enabled and optional search function
+    public Page<ArticleResponseDTO> getAllArticlesPaginated(int page, int size, String search) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<Article> articles;
+        if (search != null && !search.trim().isEmpty()) {
+            articles = articleRepository.findByNameContainingIgnoreCase(search.trim(), pageable);
+        } else {
+            articles = articleRepository.findAll(pageable);
+        }
+
+        return articles.map(ArticleResponseDTO::new);
     }
 
     // GET Article by id
@@ -64,7 +76,7 @@ public class ArticleService {
             existingArticle.setName(updateArticleDTO.getName());
         }
         //since amount and minimumAmount are Integer types in the UpdateArticleDTOs, they are nullable, unlike primitive int types which cant be nullable.
-        //This is useful since you can now ensure that a user has to type an amount and minimum amount and that it wont automatically be  the value 0.
+        //This is useful since you can now ensure that a user has to type an amount and minimum amount and that it won't automatically be  the value 0.
         //You can still assign the value 0.
         //The Article model itself (the one that is actually saved) still uses int
         //which means that memory is still optimized, since int type uses only 4 bytes compared to Integer which uses 16.

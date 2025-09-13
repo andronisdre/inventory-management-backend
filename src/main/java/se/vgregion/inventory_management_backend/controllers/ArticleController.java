@@ -1,6 +1,7 @@
 package se.vgregion.inventory_management_backend.controllers;
 
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -10,7 +11,9 @@ import se.vgregion.inventory_management_backend.dto.PatchAmountDTO;
 import se.vgregion.inventory_management_backend.dto.UpdateArticleDTO;
 import se.vgregion.inventory_management_backend.services.ArticleService;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:5173")
@@ -29,11 +32,24 @@ public class ArticleController {
     }
 
     //GET ALL articles
-
-    //add pagination
     @GetMapping
-    public ResponseEntity<List<ArticleResponseDTO>> getAllArticles() {
-        return ResponseEntity.ok(articleService.getAllArticles());
+    public ResponseEntity<?> getAllArticles(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search
+    ) {
+            Page<ArticleResponseDTO> pageResult = articleService.getAllArticlesPaginated(page, size, search);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("content", pageResult.getContent());
+            response.put("currentPage", pageResult.getNumber());
+            response.put("totalItems", pageResult.getTotalElements());
+            response.put("totalPages", pageResult.getTotalPages());
+            response.put("pageSize", pageResult.getSize());
+            response.put("hasNext", pageResult.hasNext());
+            response.put("hasPrevious", pageResult.hasPrevious());
+
+            return ResponseEntity.ok(response);
     }
 
     //GET articles with low amount
