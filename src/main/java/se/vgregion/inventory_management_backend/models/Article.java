@@ -31,6 +31,14 @@ public class Article {
     public Article() {
     }
 
+    //Constructor that is used when creating articles, previously i used the empty constructor but this is cleaner and more readable in the creation process.
+    public Article(String name, int amount, int minimumAmount, EUnit unit) {
+        this.name = name;
+        this.amount = amount;
+        this.minimumAmount = minimumAmount;
+        this.unit = unit;
+    }
+
     public Long getId() {
         return id;
     }

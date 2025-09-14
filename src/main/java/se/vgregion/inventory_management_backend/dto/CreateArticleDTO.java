@@ -1,9 +1,6 @@
 package se.vgregion.inventory_management_backend.dto;
 
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import se.vgregion.inventory_management_backend.enums.EUnit;
 
 public class CreateArticleDTO {
@@ -12,12 +9,13 @@ public class CreateArticleDTO {
     @Size(max = 50, message = "Name cannot be more than 100 characters!")
     private String name;
 
-    @NotNull(message = "Amount is required!")
-    @Min(value = 0, message = "Amount cannot be negative!")
+    //max and min annotations to ensure that the user cant make negative amount articles and that numbers aren't unreasonably big. the values of max can be adjusted
+    @Min(value = 0, message = "Amount cannot be negative")
+    @Max(value = 100000000, message = "Amount cannot exceed 100,000,000!")
     private Integer amount;
 
-    @NotNull(message = "Minimum amount is required!")
     @Min(value = 0, message = "Minimum amount cannot be negative!")
+    @Max(value = 100000000, message = "Minimum amount cannot exceed 100,000,000!")
     private Integer minimumAmount;
 
     @NotNull(message = "Unit is required!")

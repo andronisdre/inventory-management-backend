@@ -1,5 +1,6 @@
 package se.vgregion.inventory_management_backend.dto;
 
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import se.vgregion.inventory_management_backend.enums.EUnit;
@@ -9,9 +10,11 @@ public class UpdateArticleDTO {
     private String name;
 
     @Min(value = 0, message = "Amount cannot be negative")
+    @Max(value = 100000000, message = "Amount cannot exceed 100,000,000!")
     private Integer amount;
 
     @Min(value = 0, message = "Minimum amount cannot be negative!")
+    @Max(value = 100000000, message = "Minimum amount cannot exceed 100,000,000!")
     private Integer minimumAmount;
 
     private EUnit unit;
