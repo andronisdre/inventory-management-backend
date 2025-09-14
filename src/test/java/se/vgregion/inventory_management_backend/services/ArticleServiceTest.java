@@ -5,6 +5,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
 import se.vgregion.inventory_management_backend.dto.ArticleResponseDTO;
 import se.vgregion.inventory_management_backend.dto.CreateArticleDTO;
 import se.vgregion.inventory_management_backend.dto.PatchAmountDTO;
@@ -85,12 +86,12 @@ class ArticleServiceTest {
         when(articleRepository.findAll()).thenReturn(articles);
 
         // Act
-        List<ArticleResponseDTO> result = articleService.getAllArticles();
+        Page<ArticleResponseDTO> result = articleService.getAllArticlesPaginated(0,5,"",true, "", "");
 
         // Assert
-        assertEquals(2, result.size(), "Should return 2 articles");
-        assertEquals("Test Article", result.get(0).getName(), "First article name should match");
-        assertEquals("Second Article", result.get(1).getName(), "Second article name should match");
+        assertEquals(2, result.getContent().size(), "Should return 2 articles");
+        assertEquals("Test Article", result.getContent().get(0).getName(), "First article name should match");
+        assertEquals("Second Article", result.getContent().get(1).getName(), "Second article name should match");
 
         verify(articleRepository, times(1)).findAll();
     }
@@ -222,52 +223,5 @@ class ArticleServiceTest {
 
         verify(articleRepository, times(1)).findById(1L);
         verify(articleRepository, times(1)).save(existingArticle);
-    }
-
-    @Test
-    void testGetAllArticlesWithLowAmount_Success() {
-        // Arrange
-        Article lowStockArticle = createTestArticle();
-        lowStockArticle.setAmount(5); // Below the minimumAmount of 10
-
-        Article normalStockArticle = createTestArticle();
-        normalStockArticle.setId(2L);
-        normalStockArticle.setAmount(50); // Above the minimumAmount of 10
-
-        List<Article> allArticles = Arrays.asList(lowStockArticle, normalStockArticle);
-        when(articleRepository.findAll()).thenReturn(allArticles);
-
-        // Act
-        List<ArticleResponseDTO> result = articleService.getAllArticlesWithLowAmount();
-
-        // Assert
-        assertEquals(1, result.size(), "Should return only low stock articles");
-        assertEquals(1L, result.get(0).getId(), "Should return the low stock article");
-        assertEquals(5, result.get(0).getAmount(), "Amount should match low stock article");
-        assertTrue(result.get(0).isLowStock(), "Low stock should be true");
-
-        verify(articleRepository, times(1)).findAll();
-    }
-
-    @Test
-    void testGetAllArticlesWithLowAmount_NoLowStockArticles() {
-        // Arrange
-        Article article1 = createTestArticle();
-        article1.setAmount(50); // More than minimum
-
-        Article article2 = createTestArticle();
-        article2.setId(2L);
-        article2.setAmount(20); // More than minimum
-
-        List<Article> allArticles = Arrays.asList(article1, article2);
-        when(articleRepository.findAll()).thenReturn(allArticles);
-
-        // Act
-        List<ArticleResponseDTO> result = articleService.getAllArticlesWithLowAmount();
-
-        // Assert
-        assertEquals(0, result.size(), "Should return empty list when no  have low stock");
-
-        verify(articleRepository, times(1)).findAll();
     }
 }

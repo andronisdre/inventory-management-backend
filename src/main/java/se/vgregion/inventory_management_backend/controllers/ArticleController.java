@@ -12,7 +12,6 @@ import se.vgregion.inventory_management_backend.dto.UpdateArticleDTO;
 import se.vgregion.inventory_management_backend.services.ArticleService;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -36,28 +35,25 @@ public class ArticleController {
     public ResponseEntity<?> getAllArticles(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String search
+            @RequestParam(required = false) boolean onlyLowStockArticles,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "name") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir
     ) {
-            Page<ArticleResponseDTO> pageResult = articleService.getAllArticlesPaginated(page, size, search);
+        Page<ArticleResponseDTO> pageResult = articleService.getAllArticlesPaginated(
+                page, size, search, onlyLowStockArticles, sortBy, sortDir
+        );
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("content", pageResult.getContent());
-            response.put("currentPage", pageResult.getNumber());
-            response.put("totalItems", pageResult.getTotalElements());
-            response.put("totalPages", pageResult.getTotalPages());
-            response.put("pageSize", pageResult.getSize());
-            response.put("hasNext", pageResult.hasNext());
-            response.put("hasPrevious", pageResult.hasPrevious());
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", pageResult.getContent());
+        response.put("currentPage", pageResult.getNumber());
+        response.put("totalItems", pageResult.getTotalElements());
+        response.put("totalPages", pageResult.getTotalPages());
+        response.put("pageSize", pageResult.getSize());
+        response.put("hasNext", pageResult.hasNext());
+        response.put("hasPrevious", pageResult.hasPrevious());
 
-            return ResponseEntity.ok(response);
-    }
-
-    //GET articles with low amount
-
-    //add pagination
-    @GetMapping("/lowAmount")
-    public ResponseEntity<List<ArticleResponseDTO>> getAllArticlesWithLowAmount() {
-        return ResponseEntity.ok(articleService.getAllArticlesWithLowAmount());
+        return ResponseEntity.ok(response);
     }
 
     //GET article by id
@@ -79,13 +75,15 @@ public class ArticleController {
         return ResponseEntity.ok(articleService.updateArticle(id, updateArticleDTO));
     }
 
-    //PATCH article amount by id
-    @PatchMapping("/{id}/changeAmount")
-    public ResponseEntity<ArticleResponseDTO> patchArticleAmount(@PathVariable Long id, @Valid @RequestBody PatchAmountDTO patchAmountDTO) {
-        return ResponseEntity.ok(articleService.patchArticleAmount(id, patchAmountDTO));
+    //PATCH article amount by id, Add
+    @PatchMapping("/{id}/changeAmount/add")
+    public ResponseEntity<ArticleResponseDTO> patchArticleAmountAdd(@PathVariable Long id, @Valid @RequestBody PatchAmountDTO patchAmountDTO) {
+        return ResponseEntity.ok(articleService.patchArticleAmountAdd(id, patchAmountDTO));
     }
 
-    //add search by name function
-
-    //add order by name, order by status functions
+    //PATCH article amount by id, Remove
+    @PatchMapping("/{id}/changeAmount/subtract")
+    public ResponseEntity<ArticleResponseDTO> patchArticleAmountRemove(@PathVariable Long id, @Valid @RequestBody PatchAmountDTO patchAmountDTO) {
+        return ResponseEntity.ok(articleService.patchArticleAmountRemove(id, patchAmountDTO));
+    }
 }

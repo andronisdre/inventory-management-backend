@@ -1,9 +1,9 @@
 package se.vgregion.inventory_management_backend.services;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import se.vgregion.inventory_management_backend.dto.ArticleResponseDTO;
 import se.vgregion.inventory_management_backend.dto.CreateArticleDTO;
@@ -12,13 +12,9 @@ import se.vgregion.inventory_management_backend.dto.UpdateArticleDTO;
 import se.vgregion.inventory_management_backend.models.Article;
 import se.vgregion.inventory_management_backend.repository.ArticleRepository;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Service
 public class ArticleService {
 
-    @Autowired
     private final ArticleRepository articleRepository;
 
     public ArticleService (ArticleRepository articleRepository) {
@@ -40,15 +36,25 @@ public class ArticleService {
     }
 
     // GET ALL Articles, with pagination always enabled and optional search function
-    public Page<ArticleResponseDTO> getAllArticlesPaginated(int page, int size, String search) {
-        Pageable pageable = PageRequest.of(page, size);
+    public Page<ArticleResponseDTO> getAllArticlesPaginated(
+            int page,
+            int size,
+            String search,
+            boolean onlyLowStockArticles,
+            String sortBy,
+            String sortDir
+    ) {
+        Sort sort = sortDir.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
 
-        Page<Article> articles;
-        if (search != null && !search.trim().isEmpty()) {
-            articles = articleRepository.findByNameContainingIgnoreCase(search.trim(), pageable);
-        } else {
-            articles = articleRepository.findAll(pageable);
-        }
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<Article> articles = articleRepository.findArticlesWithFilters(
+                (search != null && !search.trim().isEmpty()) ? search.trim() : null,
+                onlyLowStockArticles,
+                pageable
+        );
 
         return articles.map(ArticleResponseDTO::new);
     }
@@ -92,23 +98,23 @@ public class ArticleService {
     }
 
     // PATCH Article amount
-    public ArticleResponseDTO patchArticleAmount(Long id, PatchAmountDTO patchAmountDTO) {
+    public ArticleResponseDTO patchArticleAmountAdd(Long id, PatchAmountDTO patchAmountDTO) {
         Article exisingArticle = articleRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid Article id: " + id));
 
-        if (patchAmountDTO.getAmount() != null) {
-            exisingArticle.setAmount(patchAmountDTO.getAmount());
-        }
+        exisingArticle.setAmount(patchAmountDTO.getAmount() + exisingArticle.getAmount());
 
         articleRepository.save(exisingArticle);
         return new ArticleResponseDTO(exisingArticle);
     }
 
-    // GET Articles with low amount
-    public List<ArticleResponseDTO> getAllArticlesWithLowAmount() {
-        //find all articles that match the filter where amount is smaller or equal to minimumAmount, then maps them into ArticleResponseDTOs for the correct response format.
-        return articleRepository.findAll().stream()
-                .filter(article -> article.getAmount() <= article.getMinimumAmount())
-                .map(ArticleResponseDTO::new)
-                .collect(Collectors.toList());
+    public ArticleResponseDTO patchArticleAmountRemove(Long id, PatchAmountDTO patchAmountDTO) {
+        Article exisingArticle = articleRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid Article id: " + id));
+
+        if ((exisingArticle.getAmount() - patchAmountDTO.getAmount()) >= 0) {
+            exisingArticle.setAmount(exisingArticle.getAmount() - patchAmountDTO.getAmount());
+        } else throw new IllegalArgumentException("You cant subtract more than total amount!");
+
+        articleRepository.save(exisingArticle);
+        return new ArticleResponseDTO(exisingArticle);
     }
 }
