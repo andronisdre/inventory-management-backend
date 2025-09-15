@@ -1,11 +1,12 @@
 package se.vgregion.inventory_management_backend.services;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
+import org.springframework.data.domain.*;
 import se.vgregion.inventory_management_backend.dto.ArticleResponseDTO;
 import se.vgregion.inventory_management_backend.dto.CreateArticleDTO;
 import se.vgregion.inventory_management_backend.dto.PatchAmountDTO;
@@ -43,185 +44,331 @@ class ArticleServiceTest {
         return article;
     }
 
+    private CreateArticleDTO createTestCreateDTO() {
+        CreateArticleDTO dto = new CreateArticleDTO();
+        dto.setName("New Article");
+        dto.setAmount(50);
+        dto.setMinimumAmount(5);
+        dto.setUnit(EUnit.PIECES);
+        return dto;
+    }
+
+    private UpdateArticleDTO createTestUpdateDTO() {
+        UpdateArticleDTO dto = new UpdateArticleDTO();
+        dto.setName("Updated Article");
+        dto.setAmount(75);
+        dto.setMinimumAmount(15);
+        dto.setUnit(EUnit.GRAMS);
+        return dto;
+    }
+
+    private PatchAmountDTO createTestPatchDTO(int amount) {
+        PatchAmountDTO dto = new PatchAmountDTO();
+        dto.setAmount(amount);
+        return dto;
+    }
+
+    //all tests follow the arrange, act, assert pattern
     @Test
     void testAddArticle_Success() {
-        // Arrange
-        CreateArticleDTO createDTO = new CreateArticleDTO();
-        createDTO.setName("New Article");
-        createDTO.setAmount(50);
-        createDTO.setMinimumAmount(5);
-        createDTO.setUnit(EUnit.PIECES);
-
-        Article savedArticle = new Article();
+        //arrange
+        CreateArticleDTO createDTO = createTestCreateDTO();
+        Article savedArticle = new Article("New Article", 50, 5, EUnit.PIECES);
         savedArticle.setId(1L);
-        savedArticle.setName("New Article");
-        savedArticle.setAmount(50);
-        savedArticle.setMinimumAmount(5);
-        savedArticle.setUnit(EUnit.PIECES);
 
         when(articleRepository.save(any(Article.class))).thenReturn(savedArticle);
 
-        // Act
+        //act
         ArticleResponseDTO result = articleService.addArticle(createDTO);
 
-        // Assert
-        assertNotNull(result.getId(), "Saved article should have an ID");
-        assertEquals("New Article", result.getName(), "Article name should match");
-        assertEquals(50, result.getAmount(), "Article amount should match");
-        assertEquals(5, result.getMinimumAmount(), "Article minimum amount should match");
-        assertEquals(EUnit.PIECES, result.getUnit(), "Article unit should match");
-
+        //assert
+        assertNotNull(result.getId());
+        assertEquals("New Article", result.getName());
+        assertEquals(50, result.getAmount());
+        assertEquals(5, result.getMinimumAmount());
+        assertEquals(EUnit.PIECES, result.getUnit());
         verify(articleRepository, times(1)).save(any(Article.class));
     }
 
+    //makes sure pagination works
     @Test
-    void testGetAllArticles_Success() {
-        // Arrange
+    void testGetAllArticlesPaginated_Success() {
         Article article1 = createTestArticle();
         Article article2 = createTestArticle();
         article2.setId(2L);
         article2.setName("Second Article");
 
         List<Article> articles = Arrays.asList(article1, article2);
-        when(articleRepository.findAll()).thenReturn(articles);
+        Page<Article> articlePage = new PageImpl<>(articles, PageRequest.of(0, 10), 2);
 
-        // Act
-        Page<ArticleResponseDTO> result = articleService.getAllArticlesPaginated(0,5,"",true, "", "");
+        when(articleRepository.findArticlesWithFilters(any(), any(Boolean.class), any(Pageable.class)))
+                .thenReturn(articlePage);
 
-        // Assert
-        assertEquals(2, result.getContent().size(), "Should return 2 articles");
-        assertEquals("Test Article", result.getContent().get(0).getName(), "First article name should match");
-        assertEquals("Second Article", result.getContent().get(1).getName(), "Second article name should match");
+        Page<ArticleResponseDTO> result = articleService.getAllArticlesPaginated(0, 10, "", false, "name", "asc");
 
-        verify(articleRepository, times(1)).findAll();
+        assertEquals(2, result.getContent().size());
+        assertEquals("Test Article", result.getContent().get(0).getName());
+        assertEquals("Second Article", result.getContent().get(1).getName());
+        verify(articleRepository, times(1)).findArticlesWithFilters(any(), any(Boolean.class), any(Pageable.class));
+    }
+
+    @Test
+    void testGetAllArticlesPaginated_WithSearch() {
+        Article article = createTestArticle();
+        List<Article> articles = Arrays.asList(article);
+        Page<Article> articlePage = new PageImpl<>(articles, PageRequest.of(0, 10), 1);
+
+        when(articleRepository.findArticlesWithFilters(eq("Test"), any(Boolean.class), any(Pageable.class)))
+                .thenReturn(articlePage);
+
+        Page<ArticleResponseDTO> result = articleService.getAllArticlesPaginated(0, 10, "Test", false, "name", "asc");
+
+        assertEquals(1, result.getContent().size());
+        assertEquals("Test Article", result.getContent().get(0).getName());
+        verify(articleRepository, times(1)).findArticlesWithFilters(eq("Test"), any(Boolean.class), any(Pageable.class));
+    }
+
+    @Test
+    void testGetAllArticlesPaginated_LowStockOnly() {
+        Article lowStockArticle = createTestArticle();
+        lowStockArticle.setAmount(5);
+        List<Article> articles = Arrays.asList(lowStockArticle);
+        Page<Article> articlePage = new PageImpl<>(articles, PageRequest.of(0, 10), 1);
+
+        when(articleRepository.findArticlesWithFilters(any(), eq(true), any(Pageable.class)))
+                .thenReturn(articlePage);
+
+        Page<ArticleResponseDTO> result = articleService.getAllArticlesPaginated(0, 10, "", true, "name", "asc");
+
+        assertEquals(1, result.getContent().size());
+        assertTrue(result.getContent().get(0).isLowStock());
+        verify(articleRepository, times(1)).findArticlesWithFilters(any(), eq(true), any(Pageable.class));
+    }
+
+    @Test
+    void testGetAllArticlesPaginated_DescendingSort() {
+        Article article = createTestArticle();
+        List<Article> articles = Arrays.asList(article);
+        Page<Article> articlePage = new PageImpl<>(articles, PageRequest.of(0, 10, Sort.by("name").descending()), 1);
+
+        when(articleRepository.findArticlesWithFilters(any(), any(Boolean.class), any(Pageable.class)))
+                .thenReturn(articlePage);
+
+        Page<ArticleResponseDTO> result = articleService.getAllArticlesPaginated(0, 10, "", false, "name", "desc");
+
+        assertEquals(1, result.getContent().size());
+        verify(articleRepository, times(1)).findArticlesWithFilters(any(), any(Boolean.class), any(Pageable.class));
     }
 
     @Test
     void testGetArticleById_Success() {
-        // Arrange
         Article article = createTestArticle();
         when(articleRepository.findById(1L)).thenReturn(Optional.of(article));
 
-        // Act
         ArticleResponseDTO result = articleService.getArticleById(1L);
 
-        // Assert
-        assertEquals(1L, result.getId(), "Article ID should match");
-        assertEquals("Test Article", result.getName(), "Article name should match");
-        assertEquals(100, result.getAmount(), "Article amount should match");
-
+        assertEquals(1L, result.getId());
+        assertEquals("Test Article", result.getName());
+        assertEquals(100, result.getAmount());
         verify(articleRepository, times(1)).findById(1L);
     }
 
     @Test
     void testGetArticleById_NotFound() {
-        // Arrange
         when(articleRepository.findById(999L)).thenReturn(Optional.empty());
 
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class,
-                () -> articleService.getArticleById(999L),
-                "Should throw IllegalArgumentException for article that doesnt exist");
+        assertThrows(EntityNotFoundException.class,
+                () -> articleService.getArticleById(999L));
 
         verify(articleRepository, times(1)).findById(999L);
     }
 
     @Test
     void testDeleteArticle_Success() {
-        // Arrange
-        Article article = createTestArticle();
-        when(articleRepository.findById(1L)).thenReturn(Optional.of(article));
+        when(articleRepository.existsById(1L)).thenReturn(true);
 
-        // Act
         articleService.deleteArticle(1L);
 
-        // Assert
-        verify(articleRepository, times(1)).findById(1L);
+        verify(articleRepository, times(1)).existsById(1L);
         verify(articleRepository, times(1)).deleteById(1L);
     }
 
     @Test
     void testDeleteArticle_NotFound() {
-        // Arrange
-        when(articleRepository.findById(999L)).thenReturn(Optional.empty());
+        when(articleRepository.existsById(999L)).thenReturn(false);
 
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class,
-                () -> articleService.deleteArticle(999L),
-                "Should throw IllegalArgumentException for article that doesnt exist");
+        assertThrows(EntityNotFoundException.class,
+                () -> articleService.deleteArticle(999L));
 
-        verify(articleRepository, times(1)).findById(999L);
+        verify(articleRepository, times(1)).existsById(999L);
         verify(articleRepository, never()).deleteById(anyLong());
     }
 
     @Test
     void testUpdateArticle_Success() {
-        // Arrange
         Article existingArticle = createTestArticle();
-        UpdateArticleDTO updateDTO = new UpdateArticleDTO();
-        updateDTO.setName("Updated Article");
-        updateDTO.setAmount(75);
-        updateDTO.setMinimumAmount(15);
-        updateDTO.setUnit(EUnit.GRAMS);
+        UpdateArticleDTO updateDTO = createTestUpdateDTO();
 
         when(articleRepository.findById(1L)).thenReturn(Optional.of(existingArticle));
         when(articleRepository.save(any(Article.class))).thenReturn(existingArticle);
 
-        // Act
         ArticleResponseDTO result = articleService.updateArticle(1L, updateDTO);
 
-        // Assert
-        assertEquals("Updated Article", result.getName(), "Article name should be updated");
-        assertEquals(75, result.getAmount(), "Article amount should be updated");
-        assertEquals(15, result.getMinimumAmount(), "Article minimum amount should be updated");
-        assertEquals(EUnit.GRAMS, result.getUnit(), "Article unit should be updated");
-
+        assertEquals("Updated Article", result.getName());
+        assertEquals(75, result.getAmount());
+        assertEquals(15, result.getMinimumAmount());
+        assertEquals(EUnit.GRAMS, result.getUnit());
         verify(articleRepository, times(1)).findById(1L);
         verify(articleRepository, times(1)).save(existingArticle);
     }
 
+    //fields not specified when calling update should remain unchanged
     @Test
     void testUpdateArticle_PartialUpdate() {
-        // Arrange
         Article existingArticle = createTestArticle();
         UpdateArticleDTO updateDTO = new UpdateArticleDTO();
         updateDTO.setName("Updated Article");
-        // amount, minimumAmount, and unit are null, so they should not be updated
 
         when(articleRepository.findById(1L)).thenReturn(Optional.of(existingArticle));
         when(articleRepository.save(any(Article.class))).thenReturn(existingArticle);
 
-        // Act
         ArticleResponseDTO result = articleService.updateArticle(1L, updateDTO);
 
-        // Assert
-        assertEquals("Updated Article", result.getName(), "Article name should be updated");
-        assertEquals(100, result.getAmount(), "Article amount should remain unchanged");
-        assertEquals(10, result.getMinimumAmount(), "Article minimum amount should remain unchanged");
-        assertEquals(EUnit.PIECES, result.getUnit(), "Article unit should remain unchanged");
-
+        assertEquals("Updated Article", result.getName());
+        assertEquals(100, result.getAmount());
+        assertEquals(10, result.getMinimumAmount());
+        assertEquals(EUnit.PIECES, result.getUnit());
         verify(articleRepository, times(1)).findById(1L);
         verify(articleRepository, times(1)).save(existingArticle);
     }
 
     @Test
-    void testPatchArticleAmount_Success() {
-        // Arrange
+    void testUpdateArticle_NotFound() {
+        UpdateArticleDTO updateDTO = createTestUpdateDTO();
+        when(articleRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class,
+                () -> articleService.updateArticle(999L, updateDTO));
+
+        verify(articleRepository, times(1)).findById(999L);
+        verify(articleRepository, never()).save(any(Article.class));
+    }
+
+    @Test
+    void testPatchArticleAmountAdd_Success() {
         Article existingArticle = createTestArticle();
-        PatchAmountDTO patchDTO = new PatchAmountDTO();
-        patchDTO.setAmount(25);
+        PatchAmountDTO patchDTO = createTestPatchDTO(25);
 
         when(articleRepository.findById(1L)).thenReturn(Optional.of(existingArticle));
         when(articleRepository.save(any(Article.class))).thenReturn(existingArticle);
 
-        // Act
-        ArticleResponseDTO result = articleService.patchArticleAmount(1L, patchDTO);
+        ArticleResponseDTO result = articleService.patchArticleAmountAdd(1L, patchDTO);
 
-        // Assert
-        assertEquals(25, result.getAmount(), "Article amount should be updated");
-        assertEquals("Test Article", result.getName(), "Other fields should remain unchanged");
-
+        assertEquals(125, result.getAmount());
+        assertEquals("Test Article", result.getName());
         verify(articleRepository, times(1)).findById(1L);
         verify(articleRepository, times(1)).save(existingArticle);
+    }
+
+    @Test
+    void testPatchArticleAmountAdd_NotFound() {
+        PatchAmountDTO patchDTO = createTestPatchDTO(25);
+        when(articleRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class,
+                () -> articleService.patchArticleAmountAdd(999L, patchDTO));
+
+        verify(articleRepository, times(1)).findById(999L);
+        verify(articleRepository, never()).save(any(Article.class));
+    }
+
+    @Test
+    void testPatchArticleAmountRemove_Success() {
+        Article existingArticle = createTestArticle();
+        PatchAmountDTO patchDTO = createTestPatchDTO(25);
+
+        when(articleRepository.findById(1L)).thenReturn(Optional.of(existingArticle));
+        when(articleRepository.save(any(Article.class))).thenReturn(existingArticle);
+
+        ArticleResponseDTO result = articleService.patchArticleAmountRemove(1L, patchDTO);
+
+        assertEquals(75, result.getAmount());
+        assertEquals("Test Article", result.getName());
+        verify(articleRepository, times(1)).findById(1L);
+        verify(articleRepository, times(1)).save(existingArticle);
+    }
+
+    //if you try to remove more than current amount, it should return an error
+    @Test
+    void testPatchArticleAmountRemove_InsufficientStock() {
+        Article existingArticle = createTestArticle();
+        PatchAmountDTO patchDTO = createTestPatchDTO(150);
+
+        when(articleRepository.findById(1L)).thenReturn(Optional.of(existingArticle));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> articleService.patchArticleAmountRemove(1L, patchDTO));
+
+        verify(articleRepository, times(1)).findById(1L);
+        verify(articleRepository, never()).save(any(Article.class));
+    }
+
+    //makes sure you can remove all of the amount from an article without edgecase issues
+    @Test
+    void testPatchArticleAmountRemove_ExactAmount() {
+        Article existingArticle = createTestArticle();
+        PatchAmountDTO patchDTO = createTestPatchDTO(100);
+
+        when(articleRepository.findById(1L)).thenReturn(Optional.of(existingArticle));
+        when(articleRepository.save(any(Article.class))).thenReturn(existingArticle);
+
+        ArticleResponseDTO result = articleService.patchArticleAmountRemove(1L, patchDTO);
+
+        assertEquals(0, result.getAmount());
+        verify(articleRepository, times(1)).findById(1L);
+        verify(articleRepository, times(1)).save(existingArticle);
+    }
+
+    @Test
+    void testPatchArticleAmountRemove_NotFound() {
+        PatchAmountDTO patchDTO = createTestPatchDTO(25);
+        when(articleRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class,
+                () -> articleService.patchArticleAmountRemove(999L, patchDTO));
+
+        verify(articleRepository, times(1)).findById(999L);
+        verify(articleRepository, never()).save(any(Article.class));
+    }
+
+    @Test
+    void testLowStockDetection() {
+        Article lowStockArticle = createTestArticle();
+        lowStockArticle.setAmount(5);
+
+        ArticleResponseDTO dto = new ArticleResponseDTO(lowStockArticle);
+
+        assertTrue(dto.isLowStock());
+    }
+
+    @Test
+    void testNormalStockDetection() {
+        Article normalStockArticle = createTestArticle();
+        normalStockArticle.setAmount(50);
+
+        ArticleResponseDTO dto = new ArticleResponseDTO(normalStockArticle);
+
+        assertFalse(dto.isLowStock());
+    }
+
+    //makes sure that when amount is equal to minimum amount, lowStock is true
+    @Test
+    void testBoundaryStockDetection() {
+        Article boundaryStockArticle = createTestArticle();
+        boundaryStockArticle.setAmount(10);
+
+        ArticleResponseDTO dto = new ArticleResponseDTO(boundaryStockArticle);
+
+        assertTrue(dto.isLowStock());
     }
 }

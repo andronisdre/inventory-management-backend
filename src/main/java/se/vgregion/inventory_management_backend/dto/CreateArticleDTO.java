@@ -12,10 +12,12 @@ public class CreateArticleDTO {
     //max and min annotations to ensure that the user cant make negative amount articles and that numbers aren't unreasonably big. the values of max can be adjusted
     @Min(value = 0, message = "Amount cannot be negative")
     @Max(value = 100000000, message = "Amount cannot exceed 100,000,000!")
+    @NotNull(message = "Amount is required!")
     private Integer amount;
 
     @Min(value = 0, message = "Minimum amount cannot be negative!")
     @Max(value = 100000000, message = "Minimum amount cannot exceed 100,000,000!")
+    @NotNull(message = "Minimum amount is required!")
     private Integer minimumAmount;
 
     @NotNull(message = "Unit is required!")
