@@ -1,9 +1,12 @@
 package se.vgregion.inventory_management_backend.controllers;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import se.vgregion.inventory_management_backend.dto.ArticleResponseDTO;
 import se.vgregion.inventory_management_backend.dto.CreateArticleDTO;
@@ -17,6 +20,7 @@ import java.util.Map;
 @RestController
 @CrossOrigin(origins = "http://localhost:5173")
 @RequestMapping("/api/articles")
+@Validated
 public class ArticleController {
     private final ArticleService articleService;
 
@@ -33,8 +37,8 @@ public class ArticleController {
     //GET ALL articles
     @GetMapping
     public ResponseEntity<?> getAllArticles(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(200) int size,
             @RequestParam(required = false) boolean onlyLowStockArticles,
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "name") String sortBy,
