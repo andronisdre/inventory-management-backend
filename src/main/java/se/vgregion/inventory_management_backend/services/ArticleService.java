@@ -101,6 +101,9 @@ public class ArticleService {
         if (updateArticleDTO.getUnit() != null) {
             existingArticle.setUnit(updateArticleDTO.getUnit());
         }
+        if (updateArticleDTO.getCategory() != null) {
+            existingArticle.setCategory(updateArticleDTO.getCategory());
+        }
         if (updateArticleDTO.getName() != null) {
             existingArticle.setName(updateArticleDTO.getName());
         }
