@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import se.vgregion.inventory_management_backend.enums.ECategory;
 import se.vgregion.inventory_management_backend.enums.EUnit;
 
 import java.time.LocalDateTime;
@@ -27,16 +28,18 @@ public class Article {
     @Column(unique=true)
     private String name;
     private EUnit unit;
+    private ECategory category;
 
     public Article() {
     }
 
     //Constructor that is used when creating articles, previously i used the empty constructor but this is cleaner and more readable in the creation process.
-    public Article(String name, int amount, int minimumAmount, EUnit unit) {
+    public Article(String name, int amount, int minimumAmount, EUnit unit, ECategory category) {
         this.name = name;
         this.amount = amount;
         this.minimumAmount = minimumAmount;
         this.unit = unit;
+        this.category = category;
     }
 
     public Long getId() {
@@ -93,5 +96,13 @@ public class Article {
 
     public void setUnit(EUnit unit) {
         this.unit = unit;
+    }
+
+    public ECategory getCategory() {
+        return category;
+    }
+
+    public void setCategory(ECategory category) {
+        this.category = category;
     }
 }

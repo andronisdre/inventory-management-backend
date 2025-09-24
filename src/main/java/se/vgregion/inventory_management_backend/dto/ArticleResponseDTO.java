@@ -1,5 +1,6 @@
 package se.vgregion.inventory_management_backend.dto;
 
+import se.vgregion.inventory_management_backend.enums.ECategory;
 import se.vgregion.inventory_management_backend.enums.EUnit;
 import se.vgregion.inventory_management_backend.models.Article;
 
@@ -11,6 +12,7 @@ public class ArticleResponseDTO {
     private int amount;
     private int minimumAmount;
     private EUnit unit;
+    private ECategory category;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private boolean lowStock;
@@ -21,6 +23,7 @@ public class ArticleResponseDTO {
         this.amount = article.getAmount();
         this.minimumAmount = article.getMinimumAmount();
         this.unit = article.getUnit();
+        this.category = article.getCategory();
         this.createdAt = article.getCreatedAt();
         this.updatedAt = article.getUpdatedAt();
         //flag for if an article has low stock or not, only visible when fetching data, not stored.
@@ -52,4 +55,12 @@ public class ArticleResponseDTO {
 
     public boolean isLowStock() { return lowStock; }
     public void setLowStock(boolean lowStock) { this.lowStock = lowStock; }
+
+    public ECategory getCategory() {
+        return category;
+    }
+
+    public void setCategory(ECategory category) {
+        this.category = category;
+    }
 }

@@ -11,6 +11,7 @@ import se.vgregion.inventory_management_backend.dto.ArticleResponseDTO;
 import se.vgregion.inventory_management_backend.dto.CreateArticleDTO;
 import se.vgregion.inventory_management_backend.dto.PatchAmountDTO;
 import se.vgregion.inventory_management_backend.dto.UpdateArticleDTO;
+import se.vgregion.inventory_management_backend.enums.ECategory;
 import se.vgregion.inventory_management_backend.models.Article;
 import se.vgregion.inventory_management_backend.repository.ArticleRepository;
 
@@ -33,7 +34,7 @@ public class ArticleService {
             createArticleDTO.getName(),
             createArticleDTO.getAmount(),
             createArticleDTO.getMinimumAmount(),
-            createArticleDTO.getUnit()
+            createArticleDTO.getUnit(), createArticleDTO.getCategory()
         );
 
         Article savedArticle = articleRepository.save(article);
@@ -42,7 +43,7 @@ public class ArticleService {
 
     // GET ALL Articles, with pagination always enabled and optional search function,
     // marked with transactional (readonly true) which improves efficiency since spring boot starts the transaction in read-only mode
-    // you can also sort by fields and decide wether they should be sorted in ascending or descending order.
+    // you can also sort by fields and decide whether they should be sorted in ascending or descending order.
     // in the frontend im currently only making use of ordering by name, createAt and unit
     @Transactional(readOnly = true)
     public Page<ArticleResponseDTO> getAllArticlesPaginated(
@@ -50,6 +51,7 @@ public class ArticleService {
             int size,
             String search,
             boolean onlyLowStockArticles,
+            String categoryFilter,
             String sortBy,
             String sortDir
     ) {
@@ -59,8 +61,18 @@ public class ArticleService {
 
         Pageable pageable = PageRequest.of(page, size, sort);
 
+        ECategory categoryEnum = null;
+        if (categoryFilter != null && !categoryFilter.isBlank() && !"ALL".equalsIgnoreCase(categoryFilter)) {
+            try {
+                categoryEnum = ECategory.valueOf(categoryFilter.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                categoryEnum = null;
+            }
+        }
+
         Page<Article> articles = articleRepository.findArticlesWithFilters(
                 (search != null && !search.trim().isEmpty()) ? search.trim() : null,
+                categoryEnum,
                 onlyLowStockArticles,
                 pageable
         );

@@ -11,6 +11,7 @@ import se.vgregion.inventory_management_backend.dto.ArticleResponseDTO;
 import se.vgregion.inventory_management_backend.dto.CreateArticleDTO;
 import se.vgregion.inventory_management_backend.dto.PatchAmountDTO;
 import se.vgregion.inventory_management_backend.dto.UpdateArticleDTO;
+import se.vgregion.inventory_management_backend.enums.ECategory;
 import se.vgregion.inventory_management_backend.enums.EUnit;
 import se.vgregion.inventory_management_backend.models.Article;
 import se.vgregion.inventory_management_backend.repository.ArticleRepository;
@@ -73,7 +74,7 @@ class ArticleServiceTest {
     void testAddArticle_Success() {
         //arrange
         CreateArticleDTO createDTO = createTestCreateDTO();
-        Article savedArticle = new Article("New Article", 50, 5, EUnit.PIECES);
+        Article savedArticle = new Article("New Article", 50, 5, EUnit.PIECES, ECategory.OTHER);
         savedArticle.setId(1L);
 
         when(articleRepository.save(any(Article.class))).thenReturn(savedArticle);
@@ -87,6 +88,7 @@ class ArticleServiceTest {
         assertEquals(50, result.getAmount());
         assertEquals(5, result.getMinimumAmount());
         assertEquals(EUnit.PIECES, result.getUnit());
+        assertEquals(ECategory.OTHER, result.getCategory());
         verify(articleRepository, times(1)).save(any(Article.class));
     }
 
@@ -101,15 +103,15 @@ class ArticleServiceTest {
         List<Article> articles = Arrays.asList(article1, article2);
         Page<Article> articlePage = new PageImpl<>(articles, PageRequest.of(0, 10), 2);
 
-        when(articleRepository.findArticlesWithFilters(any(), any(Boolean.class), any(Pageable.class)))
+        when(articleRepository.findArticlesWithFilters(any(), any(), any(Boolean.class), any(Pageable.class)))
                 .thenReturn(articlePage);
 
-        Page<ArticleResponseDTO> result = articleService.getAllArticlesPaginated(0, 10, "", false, "name", "asc");
+        Page<ArticleResponseDTO> result = articleService.getAllArticlesPaginated(0, 10, "", false, "", "name", "asc");
 
         assertEquals(2, result.getContent().size());
         assertEquals("Test Article", result.getContent().get(0).getName());
         assertEquals("Second Article", result.getContent().get(1).getName());
-        verify(articleRepository, times(1)).findArticlesWithFilters(any(), any(Boolean.class), any(Pageable.class));
+        verify(articleRepository, times(1)).findArticlesWithFilters(any(), any(), any(Boolean.class), any(Pageable.class));
     }
 
     @Test
@@ -118,14 +120,14 @@ class ArticleServiceTest {
         List<Article> articles = Arrays.asList(article);
         Page<Article> articlePage = new PageImpl<>(articles, PageRequest.of(0, 10), 1);
 
-        when(articleRepository.findArticlesWithFilters(eq("Test"), any(Boolean.class), any(Pageable.class)))
+        when(articleRepository.findArticlesWithFilters(eq("Test"), any(), any(Boolean.class), any(Pageable.class)))
                 .thenReturn(articlePage);
 
-        Page<ArticleResponseDTO> result = articleService.getAllArticlesPaginated(0, 10, "Test", false, "name", "asc");
+        Page<ArticleResponseDTO> result = articleService.getAllArticlesPaginated(0, 10, "Test", false, "", "name", "asc");
 
         assertEquals(1, result.getContent().size());
         assertEquals("Test Article", result.getContent().get(0).getName());
-        verify(articleRepository, times(1)).findArticlesWithFilters(eq("Test"), any(Boolean.class), any(Pageable.class));
+        verify(articleRepository, times(1)).findArticlesWithFilters(eq("Test"), any(), any(Boolean.class), any(Pageable.class));
     }
 
     @Test
@@ -135,14 +137,14 @@ class ArticleServiceTest {
         List<Article> articles = Arrays.asList(lowStockArticle);
         Page<Article> articlePage = new PageImpl<>(articles, PageRequest.of(0, 10), 1);
 
-        when(articleRepository.findArticlesWithFilters(any(), eq(true), any(Pageable.class)))
+        when(articleRepository.findArticlesWithFilters(any(), any(), eq(true), any(Pageable.class)))
                 .thenReturn(articlePage);
 
-        Page<ArticleResponseDTO> result = articleService.getAllArticlesPaginated(0, 10, "", true, "name", "asc");
+        Page<ArticleResponseDTO> result = articleService.getAllArticlesPaginated(0, 10, "", true, "", "name", "asc");
 
         assertEquals(1, result.getContent().size());
         assertTrue(result.getContent().get(0).isLowStock());
-        verify(articleRepository, times(1)).findArticlesWithFilters(any(), eq(true), any(Pageable.class));
+        verify(articleRepository, times(1)).findArticlesWithFilters(any(), any(), eq(true), any(Pageable.class));
     }
 
     @Test
@@ -151,13 +153,13 @@ class ArticleServiceTest {
         List<Article> articles = Arrays.asList(article);
         Page<Article> articlePage = new PageImpl<>(articles, PageRequest.of(0, 10, Sort.by("name").descending()), 1);
 
-        when(articleRepository.findArticlesWithFilters(any(), any(Boolean.class), any(Pageable.class)))
+        when(articleRepository.findArticlesWithFilters(any(), any(), any(Boolean.class), any(Pageable.class)))
                 .thenReturn(articlePage);
 
-        Page<ArticleResponseDTO> result = articleService.getAllArticlesPaginated(0, 10, "", false, "name", "desc");
+        Page<ArticleResponseDTO> result = articleService.getAllArticlesPaginated(0, 10, "", false, "", "name", "desc");
 
         assertEquals(1, result.getContent().size());
-        verify(articleRepository, times(1)).findArticlesWithFilters(any(), any(Boolean.class), any(Pageable.class));
+        verify(articleRepository, times(1)).findArticlesWithFilters(any(), any(), any(Boolean.class), any(Pageable.class));
     }
 
     @Test

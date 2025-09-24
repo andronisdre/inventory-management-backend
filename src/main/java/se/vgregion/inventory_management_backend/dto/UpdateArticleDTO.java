@@ -2,7 +2,9 @@ package se.vgregion.inventory_management_backend.dto;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import se.vgregion.inventory_management_backend.enums.ECategory;
 import se.vgregion.inventory_management_backend.enums.EUnit;
 
 public class UpdateArticleDTO {
@@ -19,6 +21,9 @@ public class UpdateArticleDTO {
 
     private EUnit unit;
 
+    @NotNull(message = "Category is required!")
+    private ECategory category;
+
     public UpdateArticleDTO() {}
 
     public String getName() { return name; }
@@ -32,4 +37,12 @@ public class UpdateArticleDTO {
 
     public EUnit getUnit() { return unit; }
     public void setUnit(EUnit unit) { this.unit = unit; }
+
+    public ECategory getCategory() {
+        return category;
+    }
+
+    public void setCategory(ECategory category) {
+        this.category = category;
+    }
 }

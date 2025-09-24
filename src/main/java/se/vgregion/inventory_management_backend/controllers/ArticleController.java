@@ -39,13 +39,14 @@ public class ArticleController {
     public ResponseEntity<?> getAllArticles(
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "10") @Min(1) @Max(200) int size,
-            @RequestParam(required = false) boolean onlyLowStockArticles,
+            @RequestParam(required = false, defaultValue = "false") boolean onlyLowStockArticles,
             @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "ALL") String categoryFilter,
             @RequestParam(defaultValue = "name") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir
     ) {
         Page<ArticleResponseDTO> pageResult = articleService.getAllArticlesPaginated(
-                page, size, search, onlyLowStockArticles, sortBy, sortDir
+                page, size, search, onlyLowStockArticles, categoryFilter, sortBy, sortDir
         );
 
         Map<String, Object> response = new HashMap<>();

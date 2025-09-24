@@ -1,6 +1,7 @@
 package se.vgregion.inventory_management_backend.dto;
 
 import jakarta.validation.constraints.*;
+import se.vgregion.inventory_management_backend.enums.ECategory;
 import se.vgregion.inventory_management_backend.enums.EUnit;
 
 public class CreateArticleDTO {
@@ -23,13 +24,17 @@ public class CreateArticleDTO {
     @NotNull(message = "Unit is required!")
     private EUnit unit;
 
+    @NotNull(message = "Category is required!")
+    private ECategory category;
+
     public CreateArticleDTO() {}
 
-    public CreateArticleDTO(String name, Integer amount, Integer minimumAmount, EUnit unit) {
+    public CreateArticleDTO(String name, Integer amount, Integer minimumAmount, EUnit unit, ECategory category) {
         this.name = name;
         this.amount = amount;
         this.minimumAmount = minimumAmount;
         this.unit = unit;
+        this.category = category;
     }
 
     public String getName() { return name; }
@@ -43,4 +48,12 @@ public class CreateArticleDTO {
 
     public EUnit getUnit() { return unit; }
     public void setUnit(EUnit unit) { this.unit = unit; }
+
+    public ECategory getCategory() {
+        return category;
+    }
+
+    public void setCategory(ECategory category) {
+        this.category = category;
+    }
 }
